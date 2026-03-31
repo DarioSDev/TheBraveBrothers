@@ -46,10 +46,12 @@
 
 4. Workflow e Automação
 - **Deploy:** GitHub Actions configurado para deploy automático no GitHub Pages via branch `gh-pages`.
-- **Mandato do Agente:** Após cada alteração, o agente deve perguntar se deve realizar o `push`. Se confirmado, deve executar:
-    1. `git add .`
-    2. `git commit -m "Mensagem descritiva"`
-    3. `git push origin main`
+- **Mandato do Agente:** 
+    1. **Preservação Soberana:** Alterações feitas manualmente pelo utilizador no código **NUNCA** devem ser modificadas ou revertidas pelo agente.
+    2. Após cada alteração, o agente deve perguntar se deve realizar o `push`. Se confirmado, deve executar:
+        - `git add .`
+        - `git commit -m "Mensagem descritiva"`
+        - `git push origin main`
 
 5. Configurações Globais
 - **Resolução:** 800x600 (Centrado no browser).
