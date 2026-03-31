@@ -38,8 +38,8 @@ export default class SplashScene extends Phaser.Scene {
         this.load.spritesheet('heart_spin', '/sprites/objects/Common Pick-ups/Heart_Spin (16 x 16).png', { frameWidth: 16, frameHeight: 16 });
         this.load.spritesheet('chest', '/sprites/objects/Common Pick-ups/Treasure_Chest (32 x 16).png', { frameWidth: 32, frameHeight: 16 });
 
-        // UI - Spritesheet de 8x8 com 2 frames
-        this.load.spritesheet('ui_heart', '/sprites/objects/Mini UI/Health_Indicator_White_Outline (8 x 8).png', { frameWidth: 8, frameHeight: 8 });
+        // UI
+        this.load.image('ui_heart', '/sprites/objects/Mini UI/Health_Indicator_White_Outline (8 x 8).png');
 
         // Common Assets
         this.load.image('bullet', '/sprites/common/bullet.png');
@@ -57,11 +57,19 @@ export default class SplashScene extends Phaser.Scene {
             strokeThickness: 6
         }).setOrigin(0.5);
 
+        // Texto de Versão para testar a automação
+        this.add.text(780, 580, 'v1.1 - Deploy Automático', {
+            fontFamily: 'at01',
+            fontSize: '18px',
+            fill: '#aaa'
+        }).setOrigin(1, 1);
+
         this.tweens.add({
             targets: startText,
-            alpha: 0,
+            scale: 1.1,
+            alpha: 0.7,
             duration: 800,
-            ease: 'Linear',
+            ease: 'Sine.easeInOut',
             yoyo: true,
             loop: -1
         });
