@@ -40,12 +40,15 @@ export default class Player extends Phaser.GameObjects.Sprite {
 
     updateHitbox() {
         if (this.heroType === 'Matt') {
-            this.body.setSize(14, 18);
-            this.body.setOffset(9, 14);
+            // Hitbox muito baixa: 15px * escala 2x = 30px de altura total.
+            this.body.setSize(14, 15);
+            this.body.setOffset(9, 17);
         } else if (this.heroType === 'Dave') {
-            this.body.setSize(16, 24);
-            this.body.setOffset(8, 8);
+            // 26px * escala 1.5x = 39px de altura total.
+            this.body.setSize(16, 26);
+            this.body.setOffset(8, 6);
         } else if (this.heroType === 'Simon') {
+            // 38px * escala 1.2x = 45.6px de altura total.
             this.body.setSize(18, 38);
             this.body.setOffset(7, 10);
         }
@@ -60,7 +63,7 @@ export default class Player extends Phaser.GameObjects.Sprite {
                 anims.create({
                     key: `${h}_idle`,
                     frames: anims.generateFrameNumbers(`${h}_idle`, { start: 0, end: 5 }),
-                    frameRate: 5,
+                    frameRate: 10,
                     repeat: -1
                 });
                 anims.create({
@@ -124,18 +127,13 @@ export default class Player extends Phaser.GameObjects.Sprite {
     takeDamage() {
         if (this.isHurt) return;
         this.isHurt = true;
-        
-        // Impulso para cima e para trás (knockback) para evitar atravessar o chão
         this.body.setVelocityY(-250);
         this.body.setVelocityX(this.lastDirection * -200);
-        
-        // Aumentar tamanho ligeiramente
         this.setScale(this.baseScale * 1.2);
         
         this.scene.time.delayedCall(500, () => {
             this.isHurt = false;
             this.setScale(this.baseScale);
-            // Restaurar hitbox original após encolher
             this.updateHitbox();
         });
     }
@@ -207,7 +205,7 @@ export default class Player extends Phaser.GameObjects.Sprite {
 
     attackDave() {
         const spawnX = this.x + (20 * this.lastDirection);
-        const spawnY = this.y + 13; ; 
+        const spawnY = this.y; 
 
         const arrow = this.scene.physics.add.sprite(spawnX, spawnY, 'arrow');
         arrow.setScale(1.5);
@@ -217,7 +215,7 @@ export default class Player extends Phaser.GameObjects.Sprite {
         const range = 500; 
         const targetX = spawnX + (range * this.lastDirection);
 
-        this.scene.tweens.add({ 
+        this.scene.tweens.add({
             targets: arrow,
             x: targetX,
             duration: 500, 
@@ -239,13 +237,13 @@ export default class Player extends Phaser.GameObjects.Sprite {
 
     attackMatt() {
         const spawnX = this.x + (20 * this.lastDirection);
-        const spawnY = this.y + 16; 
+        const spawnY = this.y + 12; 
         const bullet = this.scene.physics.add.sprite(spawnX, spawnY, 'bullet');
         bullet.setScale(1.5);
         bullet.body.setAllowGravity(false);
 
         let hitEnemies = new Set();
-        const range = 250; 
+        const range = 450; 
         const targetX = spawnX + (range * this.lastDirection);
 
         this.scene.tweens.add({
@@ -291,6 +289,10 @@ export default class Player extends Phaser.GameObjects.Sprite {
             if (cursors.up.isDown && this.body.blocked.down) {
                 this.body.setVelocityY(this.jumpForce);
             }
+        } else if (this.isHurt) {
+            // Knockback effect
+        } else {
+            this.body.setVelocityX(0);
         }
 
         const prefix = this.heroType.toLowerCase();
@@ -298,7 +300,7 @@ export default class Player extends Phaser.GameObjects.Sprite {
         if (this.isHurt) {
             this.play(`${prefix}_hurt`, true);
         } else if (this.isReloading && this.heroType === 'Dave') {
-            // Anim a correr do attackDave
+            // Anim controlada no attackDave
         } else if (!this.body.blocked.down) {
             if (this.body.velocity.y < 0) {
                 this.play(`${prefix}_air`, true);

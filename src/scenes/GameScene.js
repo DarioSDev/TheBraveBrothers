@@ -15,6 +15,8 @@ export default class GameScene extends Phaser.Scene {
         this.hearts = 5;
         this.maxHearts = 5;
         this.coins = 0;
+        this.collectibles = 0;
+        this.maxCollectibles = 5;
         this.isInvulnerable = false;
     }
 
@@ -29,14 +31,16 @@ export default class GameScene extends Phaser.Scene {
         this.physics.add.existing(ground, true);
         this.platforms.add(ground);
 
+        // Passagens exclusivas para o Matt (Vão de 34px)
+        // Solo topo: 560. Fundo plataforma: 526. Centro: 513.5
         const platformData = [
-            { x: 300, y: 520, w: 120 },
+            { x: 300, y: 513, w: 120 }, // Matt passage
             { x: 600, y: 460, w: 150 },
-            { x: 900, y: 500, w: 150 },
+            { x: 900, y: 513, w: 150 }, // Matt passage
             { x: 1200, y: 440, w: 200 },
             { x: 1500, y: 480, w: 150 },
             { x: 1900, y: 420, w: 200 },
-            { x: 2200, y: 500, w: 150 }
+            { x: 2200, y: 513, w: 150 }  // Matt passage
         ];
 
         platformData.forEach(p => this.addPlatform(p.x, p.y, p.w));
@@ -68,15 +72,14 @@ export default class GameScene extends Phaser.Scene {
         this.uiHeroText = this.add.text(20, 20, '', { 
             fontFamily: 'at01', fontSize: '28px', fill: '#fff', stroke: '#000', strokeThickness: 4
         });
-        this.uiCoinsText = this.add.text(20, 50, '', { 
-            fontFamily: 'at01', fontSize: '24px', fill: '#ffd700', stroke: '#000', strokeThickness: 4
+        this.uiStatsText = this.add.text(20, 50, '', { 
+            fontFamily: 'at01', fontSize: '22px', fill: '#ffd700', stroke: '#000', strokeThickness: 4
         });
         
-        // Armazenar os ícones de vida num array para animação individual
         this.uiHearts = [];
         this.createHeartsUI();
         
-        this.uiContainer.add([this.uiHeroText, this.uiCoinsText]);
+        this.uiContainer.add([this.uiHeroText, this.uiStatsText]);
         this.updateUI();
 
         this.createAnims();
@@ -86,20 +89,16 @@ export default class GameScene extends Phaser.Scene {
     }
 
     createHeartsUI() {
-        // Limpar corações antigos se existirem
         this.uiHearts.forEach(h => h.destroy());
         this.uiHearts = [];
-
         const startX = 25;
-        const startY = 90;
+        const startY = 95;
         const spacing = 20;
-
         for (let i = 0; i < this.maxHearts; i++) {
             const heart = this.add.sprite(startX + (i * spacing), startY, 'ui_heart', 0);
             heart.setScale(2.5);
             heart.setScrollFactor(0);
             this.uiHearts.push(heart);
-            // Se o jogador tiver menos vida que o máximo no início (ex: troca de herói), esconder
             if (i >= this.hearts) heart.setVisible(false);
         }
     }
@@ -113,7 +112,6 @@ export default class GameScene extends Phaser.Scene {
                 repeat: -1
             });
         }
-
         if (!this.anims.exists('small_coin_anim')) {
             this.anims.create({
                 key: 'small_coin_anim',
@@ -122,7 +120,6 @@ export default class GameScene extends Phaser.Scene {
                 repeat: -1
             });
         }
-
         if (!this.anims.exists('big_coin_anim')) {
             this.anims.create({
                 key: 'big_coin_anim',
@@ -131,7 +128,6 @@ export default class GameScene extends Phaser.Scene {
                 repeat: -1
             });
         }
-
         if (!this.anims.exists('chest_open')) {
             this.anims.create({
                 key: 'chest_open',
@@ -166,19 +162,27 @@ export default class GameScene extends Phaser.Scene {
             this.createItem(x, 540, 'small_coin');
         }
 
+        // Itens nas passagens exclusivas do Matt
+        this.createItem(300, 545, 'big_coin');
+        this.createItem(900, 545, 'heart_spin');
+        this.createItem(2200, 545, 'collectible');
+
         platforms.forEach(p => {
-            this.createItem(p.x, p.y - 40, 'small_coin');
+            if (p.y < 500) this.createItem(p.x, p.y - 40, 'small_coin');
             if (p.x === 1200 || p.x === 1900) {
                 this.createItem(p.x + 40, p.y - 40, 'chest');
             }
         });
 
-        this.createItem(900, 460, 'heart_spin');
+        // Completar os 5 colecionáveis da missão
+        [400, 800, 1300, 1700].forEach(x => {
+            this.createItem(x, 400, 'collectible');
+        });
     }
 
     createItem(x, y, type) {
         const item = this.physics.add.sprite(x, y, type);
-        item.type = type;
+        item.setData('type', type); // Usar DataManager para segurança
         this.items.add(item);
 
         if (type === 'small_coin') {
@@ -189,6 +193,8 @@ export default class GameScene extends Phaser.Scene {
         } else if (type === 'chest') {
             item.setFrame(0);
             item.setScale(1.5);
+        } else if (type === 'collectible') {
+            item.setScale(1.2);
         }
 
         this.tweens.add({
@@ -202,58 +208,57 @@ export default class GameScene extends Phaser.Scene {
     }
 
     collectItem(item) {
-        if (item.isBeingCollected) return;
+        if (item.getData('isBeingCollected')) return;
+        const type = item.getData('type');
 
-        if (item.type === 'small_coin') {
-            this.coins++;
-            item.destroy();
-        } else if (item.type === 'big_coin') {
-            this.coins += 10;
-            item.destroy();
-        } else if (item.type === 'heart_spin') {
-            if (this.hearts < this.maxHearts) {
-                this.hearts++;
-                this.updateHeartsUI();
-            }
-            item.destroy();
-        } else if (item.type === 'chest') {
-            item.isBeingCollected = true;
-            item.play('chest_open');
-            
-            this.time.delayedCall(300, () => {
-                const bigCoin = this.physics.add.sprite(item.x, item.y - 10, 'big_coin');
-                bigCoin.type = 'big_coin';
-                this.items.add(bigCoin);
-                bigCoin.play('big_coin_anim');
-                bigCoin.setScale(1.5);
-                
-                // Impulso controlado
-                bigCoin.body.setVelocityY(-120);
-                this.time.delayedCall(350, () => {
-                    if (bigCoin.body) bigCoin.body.setVelocityY(0);
-                });
-
-                const popup = this.add.text(item.x, item.y - 40, '+10', { 
-                    fontFamily: 'at01', fontSize: '24px', fill: '#ffd700', stroke: '#000', strokeThickness: 4
+        switch (type) {
+            case 'small_coin':
+                this.coins++;
+                item.destroy();
+                break;
+            case 'big_coin':
+                this.coins += 10;
+                item.destroy();
+                break;
+            case 'heart_spin':
+                if (this.hearts < this.maxHearts) {
+                    this.hearts++;
+                    this.updateHeartsUI();
+                }
+                item.destroy();
+                break;
+            case 'collectible':
+                this.collectibles++;
+                item.destroy();
+                const missionPopup = this.add.text(item.x, item.y - 20, 'CRISTAL!', { 
+                    fontFamily: 'at01', fontSize: '20px', fill: '#00ff00', stroke: '#000', strokeThickness: 4
                 }).setOrigin(0.5);
+                this.tweens.add({ targets: missionPopup, y: missionPopup.y - 30, alpha: 0, duration: 1000, onComplete: () => missionPopup.destroy() });
                 
-                this.tweens.add({
-                    targets: popup,
-                    y: popup.y - 30,
-                    alpha: 0,
-                    duration: 1000,
-                    onComplete: () => popup.destroy()
+                if (this.collectibles >= this.maxCollectibles) {
+                    const winText = this.add.text(400, 300, 'MISSÃO CUMPRIDA!', { 
+                        fontFamily: 'at01', fontSize: '64px', fill: '#fff', stroke: '#000', strokeThickness: 8 
+                    }).setOrigin(0.5).setScrollFactor(0);
+                    this.time.delayedCall(3000, () => this.scene.start('MenuScene'));
+                }
+                break;
+            case 'chest':
+                item.setData('isBeingCollected', true);
+                item.play('chest_open');
+                this.time.delayedCall(300, () => {
+                    const bigCoin = this.physics.add.sprite(item.x, item.y - 10, 'big_coin');
+                    bigCoin.setData('type', 'big_coin');
+                    this.items.add(bigCoin);
+                    bigCoin.play('big_coin_anim');
+                    bigCoin.setScale(1.5);
+                    this.tweens.add({ targets: bigCoin, y: item.y - 40, duration: 400, ease: 'Back.easeOut' });
+                    const popup = this.add.text(item.x, item.y - 40, '+10', { 
+                        fontFamily: 'at01', fontSize: '24px', fill: '#ffd700', stroke: '#000', strokeThickness: 4
+                    }).setOrigin(0.5);
+                    this.tweens.add({ targets: popup, y: popup.y - 30, alpha: 0, duration: 1000, onComplete: () => popup.destroy() });
                 });
-            });
-
-            this.time.delayedCall(1000, () => {
-                this.tweens.add({
-                    targets: item,
-                    alpha: 0,
-                    duration: 500,
-                    onComplete: () => item.destroy()
-                });
-            });
+                this.time.delayedCall(1500, () => item.destroy());
+                break;
         }
 
         if (this.coins >= 100) {
@@ -263,29 +268,22 @@ export default class GameScene extends Phaser.Scene {
                 this.updateHeartsUI();
             }
         }
-
         this.updateUI();
     }
 
     handlePlayerDamage() {
         if (this.isInvulnerable) return;
-        
-        // Animação do coração a desaparecer
         const heartToAnimate = this.uiHearts[this.hearts - 1];
         if (heartToAnimate) {
-            heartToAnimate.setFrame(1); // Muda para o ponto branco
-            this.time.delayedCall(300, () => {
-                heartToAnimate.setVisible(false);
-            });
+            heartToAnimate.setFrame(1);
+            this.time.delayedCall(300, () => heartToAnimate.setVisible(false));
         }
-
         this.hearts--;
         this.updateUI();
         if (this.hearts <= 0) {
             this.scene.start('SplashScene');
             return;
         }
-        
         this.player.takeDamage();
         this.isInvulnerable = true;
         this.player.setAlpha(0.5);
@@ -309,18 +307,15 @@ export default class GameScene extends Phaser.Scene {
 
     updateUI() {
         this.uiHeroText.setText(`${this.selectedHero}`);
-        this.uiCoinsText.setText(`Moedas: ${this.coins}`);
+        this.uiStatsText.setText(`Moedas: ${this.coins} | Cristais: ${this.collectibles}/${this.maxCollectibles}`);
     }
 
     updateHeartsUI() {
         for (let i = 0; i < this.maxHearts; i++) {
             if (i < this.hearts) {
                 this.uiHearts[i].setVisible(true).setFrame(0);
-            } else {
-                // Manter invisível se o dano já foi processado
-                if (this.uiHearts[i].frame.name === 0) {
-                    this.uiHearts[i].setVisible(false);
-                }
+            } else if (this.uiHearts[i].frame.name === 0) {
+                this.uiHearts[i].setVisible(false);
             }
         }
     }

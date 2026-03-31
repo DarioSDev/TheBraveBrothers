@@ -37,8 +37,11 @@ export default class SplashScene extends Phaser.Scene {
         this.load.spritesheet('big_coin', 'sprites/objects/Common Pick-ups/Coin (16 x 16).png', { frameWidth: 16, frameHeight: 16 });
         this.load.spritesheet('heart_spin', 'sprites/objects/Common Pick-ups/Heart_Spin (16 x 16).png', { frameWidth: 16, frameHeight: 16 });
         this.load.spritesheet('chest', 'sprites/objects/Common Pick-ups/Treasure_Chest (32 x 16).png', { frameWidth: 32, frameHeight: 16 });
+        
+        // Novo Colecionável (32x32 baseado no ficheiro enviado)
+        this.load.image('collectible', 'sprites/objects/Common Pick-ups/Collectible.png');
 
-        // UI - Spritesheet de 8x8 com 2 frames
+        // UI
         this.load.spritesheet('ui_heart', 'sprites/objects/Mini UI/Health_Indicator_White_Outline (8 x 8).png', { frameWidth: 8, frameHeight: 8 });
 
         // Common Assets
@@ -57,7 +60,7 @@ export default class SplashScene extends Phaser.Scene {
             strokeThickness: 6
         }).setOrigin(0.5);
 
-        this.add.text(780, 580, 'v1.1 - Deploy Automático', {
+        this.add.text(780, 580, 'v1.2 - Missões e Matt-Size', {
             fontFamily: 'at01',
             fontSize: '18px',
             fill: '#aaa'

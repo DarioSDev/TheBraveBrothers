@@ -17,27 +17,32 @@ export default class MenuScene extends Phaser.Scene {
             { name: 'Matt', key: 'matt_idle', x: 600 }
         ];
 
+        // Linha de base onde os pés de todos vão assentar
+        const floorY = 400;
+
         characters.forEach(char => {
-            const sprite = this.add.sprite(char.x, 300, char.key, 0)
-                .setScale(2.5)
+            // Definimos a origem em (0.5, 1) para que o ponto Y represente a base (pés) do sprite
+            const sprite = this.add.sprite(char.x, floorY, char.key, 0)
+                .setOrigin(0.5, 1)
+                .setScale(3) // Escala aumentada para melhor visualização no menu
                 .setInteractive({ useHandCursor: true });
 
-            this.add.text(char.x, 420, char.name, { 
+            this.add.text(char.x, floorY + 20, char.name, { 
                 fontFamily: 'at01',
                 fontSize: '32px', fill: '#fff', stroke: '#000', strokeThickness: 4
-            }).setOrigin(0.5);
+            }).setOrigin(0.5, 0);
 
             sprite.on('pointerdown', () => {
                 this.scene.start('GameScene', { selectedHero: char.name });
             });
 
             sprite.on('pointerover', () => {
-                sprite.setScale(2.8);
+                sprite.setScale(3.3);
                 sprite.setTint(0xffff00);
             });
             
             sprite.on('pointerout', () => {
-                sprite.setScale(2.5);
+                sprite.setScale(3);
                 sprite.clearTint();
             });
         });
