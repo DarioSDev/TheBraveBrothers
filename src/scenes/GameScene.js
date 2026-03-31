@@ -27,20 +27,21 @@ export default class GameScene extends Phaser.Scene {
 
         // --- 1. AMBIENTE ---
         this.platforms = this.physics.add.staticGroup();
-        const ground = this.add.rectangle(worldWidth / 2, 580, worldWidth, 40, 0x333333);
+        
+        // Retornar aos retângulos limpos (cinza escuro)
+        const ground = this.add.rectangle(worldWidth / 2, 580, worldWidth, 40, 0x222222);
         this.physics.add.existing(ground, true);
         this.platforms.add(ground);
 
         // Passagens exclusivas para o Matt (Vão de 34px)
-        // Solo topo: 560. Fundo plataforma: 526. Centro: 513.5
         const platformData = [
-            { x: 300, y: 513, w: 120 }, // Matt passage
+            { x: 300, y: 513, w: 120 }, 
             { x: 600, y: 460, w: 150 },
-            { x: 900, y: 513, w: 150 }, // Matt passage
+            { x: 900, y: 513, w: 150 }, 
             { x: 1200, y: 440, w: 200 },
             { x: 1500, y: 480, w: 150 },
             { x: 1900, y: 420, w: 200 },
-            { x: 2200, y: 513, w: 150 }  // Matt passage
+            { x: 2200, y: 513, w: 150 } 
         ];
 
         platformData.forEach(p => this.addPlatform(p.x, p.y, p.w));
@@ -51,6 +52,8 @@ export default class GameScene extends Phaser.Scene {
         this.physics.add.collider(this.enemies, this.platforms);
 
         this.items = this.physics.add.group({ allowGravity: false });
+        
+        this.createAnims();
         this.spawnItems(platformData, worldWidth);
 
         // --- 3. JOGADOR ---
@@ -82,8 +85,6 @@ export default class GameScene extends Phaser.Scene {
         this.uiContainer.add([this.uiHeroText, this.uiStatsText]);
         this.updateUI();
 
-        this.createAnims();
-
         this.input.keyboard.on('keydown-P', () => this.switchHero());
         this.input.keyboard.on('keydown-R', () => this.scene.start('SplashScene'));
     }
@@ -92,11 +93,11 @@ export default class GameScene extends Phaser.Scene {
         this.uiHearts.forEach(h => h.destroy());
         this.uiHearts = [];
         const startX = 25;
-        const startY = 95;
-        const spacing = 20;
+        const startY = 90;
+        const spacing = 15; // Mais apertado
         for (let i = 0; i < this.maxHearts; i++) {
             const heart = this.add.sprite(startX + (i * spacing), startY, 'ui_heart', 0);
-            heart.setScale(2.5);
+            heart.setScale(1.5); // Reduzido (estava a 2.5)
             heart.setScrollFactor(0);
             this.uiHearts.push(heart);
             if (i >= this.hearts) heart.setVisible(false);
@@ -144,8 +145,8 @@ export default class GameScene extends Phaser.Scene {
         this.physics.add.overlap(this.player, this.items, (p, item) => this.collectItem(item));
     }
 
-    addPlatform(x, y, width) {
-        const rect = this.add.rectangle(x, y, width, 25, 0x666666);
+    addPlatform(x, y, width, height = 25) {
+        const rect = this.add.rectangle(x, y, width, height, 0x444444);
         this.physics.add.existing(rect, true);
         this.platforms.add(rect);
     }
@@ -158,14 +159,15 @@ export default class GameScene extends Phaser.Scene {
     }
 
     spawnItems(platforms, worldWidth) {
-        for (let x = 200; x < worldWidth; x += 400) {
+        // Moedas comuns
+        for (let x = 200; x < worldWidth; x += 450) {
             this.createItem(x, 540, 'small_coin');
         }
 
-        // Itens nas passagens exclusivas do Matt
-        this.createItem(300, 545, 'big_coin');
-        this.createItem(900, 545, 'heart_spin');
-        this.createItem(2200, 545, 'collectible');
+        // CORREÇÃO: Itens nas passagens do Matt
+        this.createItem(300, 545, 'small_coin'); // Era big_coin, mudei para small
+        this.createItem(900, 545, 'small_coin'); // AQUI ESTAVA O CORAÇÃO, mudei para small_coin
+        this.createItem(2200, 545, 'small_coin');
 
         platforms.forEach(p => {
             if (p.y < 500) this.createItem(p.x, p.y - 40, 'small_coin');
@@ -174,22 +176,25 @@ export default class GameScene extends Phaser.Scene {
             }
         });
 
-        // Completar os 5 colecionáveis da missão
-        [400, 800, 1300, 1700].forEach(x => {
+        // Colecionáveis da missão (Cristais)
+        [400, 800, 1300, 1700, 2100].forEach(x => {
             this.createItem(x, 400, 'collectible');
         });
     }
 
     createItem(x, y, type) {
         const item = this.physics.add.sprite(x, y, type);
-        item.setData('type', type); // Usar DataManager para segurança
+        item.setData('type', type);
         this.items.add(item);
 
         if (type === 'small_coin') {
             item.play('small_coin_anim');
         } else if (type === 'heart_spin') {
             item.play('heart_anim');
-            item.setScale(1.2);
+            item.setScale(1.0);
+        } else if (type === 'big_coin') {
+            item.play('big_coin_anim');
+            item.setScale(1.3);
         } else if (type === 'chest') {
             item.setFrame(0);
             item.setScale(1.5);
@@ -230,10 +235,10 @@ export default class GameScene extends Phaser.Scene {
             case 'collectible':
                 this.collectibles++;
                 item.destroy();
-                const missionPopup = this.add.text(item.x, item.y - 20, 'CRISTAL!', { 
+                const popup = this.add.text(item.x, item.y - 20, 'CRISTAL!', { 
                     fontFamily: 'at01', fontSize: '20px', fill: '#00ff00', stroke: '#000', strokeThickness: 4
                 }).setOrigin(0.5);
-                this.tweens.add({ targets: missionPopup, y: missionPopup.y - 30, alpha: 0, duration: 1000, onComplete: () => missionPopup.destroy() });
+                this.tweens.add({ targets: popup, y: popup.y - 30, alpha: 0, duration: 1000, onComplete: () => popup.destroy() });
                 
                 if (this.collectibles >= this.maxCollectibles) {
                     const winText = this.add.text(400, 300, 'MISSÃO CUMPRIDA!', { 
@@ -252,10 +257,10 @@ export default class GameScene extends Phaser.Scene {
                     bigCoin.play('big_coin_anim');
                     bigCoin.setScale(1.5);
                     this.tweens.add({ targets: bigCoin, y: item.y - 40, duration: 400, ease: 'Back.easeOut' });
-                    const popup = this.add.text(item.x, item.y - 40, '+10', { 
+                    const valPopup = this.add.text(item.x, item.y - 40, '+10', { 
                         fontFamily: 'at01', fontSize: '24px', fill: '#ffd700', stroke: '#000', strokeThickness: 4
                     }).setOrigin(0.5);
-                    this.tweens.add({ targets: popup, y: popup.y - 30, alpha: 0, duration: 1000, onComplete: () => popup.destroy() });
+                    this.tweens.add({ targets: valPopup, y: valPopup.y - 30, alpha: 0, duration: 1000, onComplete: () => valPopup.destroy() });
                 });
                 this.time.delayedCall(1500, () => item.destroy());
                 break;

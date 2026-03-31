@@ -44,6 +44,9 @@ export default class SplashScene extends Phaser.Scene {
         // UI
         this.load.spritesheet('ui_heart', 'sprites/objects/Mini UI/Health_Indicator_White_Outline (8 x 8).png', { frameWidth: 8, frameHeight: 8 });
 
+        // TileSets
+        this.load.image('cave_terrain', 'sprites/tileSets/cave/Brown_Tile_Terrain (16 x 16).png');
+
         // Common Assets
         this.load.image('bullet', 'sprites/common/bullet.png');
         this.load.image('arrow', 'sprites/common/arrow.png');
